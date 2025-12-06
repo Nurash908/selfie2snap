@@ -16,6 +16,7 @@ import ImageLightbox from "@/components/ImageLightbox";
 import ImageFilters from "@/components/ImageFilters";
 import BatchDownload from "@/components/BatchDownload";
 import WatermarkEditor from "@/components/WatermarkEditor";
+import ImageUpscaler from "@/components/ImageUpscaler";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
 import { useFavorites } from "@/hooks/useFavorites";
 import {
@@ -36,6 +37,9 @@ import {
   Maximize2,
   Sliders,
   Type,
+  ZoomIn,
+  ArrowRight,
+  Check,
 } from "lucide-react";
 
 const FRAME_STYLES = [
@@ -63,6 +67,7 @@ const Index = () => {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [editingImage, setEditingImage] = useState<string | null>(null);
   const [watermarkImage, setWatermarkImage] = useState<string | null>(null);
+  const [upscaleImage, setUpscaleImage] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const { playSound } = useSoundEffects();
@@ -271,6 +276,17 @@ const Index = () => {
         )}
       </AnimatePresence>
 
+      {/* Image Upscaler */}
+      <AnimatePresence>
+        {upscaleImage && (
+          <ImageUpscaler
+            imageUrl={upscaleImage}
+            isOpen={!!upscaleImage}
+            onClose={() => setUpscaleImage(null)}
+          />
+        )}
+      </AnimatePresence>
+
       <div className="relative z-10 min-h-screen flex flex-col">
         {/* Header */}
         <motion.header 
@@ -364,23 +380,57 @@ const Index = () => {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: "spring" }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-4"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-6"
             >
               <Star className="w-4 h-4 text-accent animate-pulse" />
               <span className="text-sm font-medium">AI-Powered Portrait Generation</span>
               <Star className="w-4 h-4 text-accent animate-pulse" />
             </motion.div>
             
-            <h2 className="text-4xl md:text-6xl font-bold mb-4">
+            <h2 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
               Transform Your <span className="gradient-text">Selfies</span>
+              <br />
+              <span className="text-3xl md:text-4xl text-muted-foreground">Into Art</span>
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
               Upload two portraits and watch AI magic create stunning cinematic moments
             </p>
+
+            {/* Workflow Steps */}
+            <div className="flex items-center justify-center gap-2 md:gap-4 flex-wrap mb-8">
+              {[
+                { step: 1, label: "Upload", done: !!portrait1 },
+                { step: 2, label: "Style", done: !!portrait1 && !!portrait2 },
+                { step: 3, label: "Generate", done: generatedImages.length > 0 },
+                { step: 4, label: "Download", done: false },
+              ].map((item, i) => (
+                <motion.div
+                  key={item.step}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 + i * 0.1 }}
+                  className="flex items-center gap-2"
+                >
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+                      item.done
+                        ? "bg-gradient-to-r from-primary to-accent text-primary-foreground"
+                        : "bg-secondary text-muted-foreground"
+                    }`}
+                  >
+                    {item.done ? <Check className="w-4 h-4" /> : item.step}
+                  </div>
+                  <span className={`text-sm ${item.done ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+                    {item.label}
+                  </span>
+                  {i < 3 && <ArrowRight className="w-4 h-4 text-muted-foreground/50 hidden md:block" />}
+                </motion.div>
+              ))}
+            </div>
           </motion.div>
 
           {/* Ad banner */}
-          <div className="mb-8">
+          <div className="mb-10">
             <AdBanner format="horizontal" className="rounded-xl overflow-hidden" />
           </div>
 
@@ -624,62 +674,90 @@ const Index = () => {
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                         />
                       </div>
-                      <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-end gap-2 p-3">
-                        <div className="flex items-center gap-2 flex-wrap justify-center">
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => setLightboxIndex(index)}
-                            className="h-9 w-9 p-0"
-                            title="View in Gallery"
-                          >
-                            <Maximize2 className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => setSelectedComparison(index)}
-                            className="h-9 w-9 p-0"
-                            title="Compare"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => setEditingImage(image)}
-                            className="h-9 w-9 p-0"
-                            title="Edit Filters"
-                          >
-                            <Sliders className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => setWatermarkImage(image)}
-                            className="h-9 w-9 p-0"
-                            title="Add Watermark"
-                          >
-                            <Type className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => handleDownload(image)}
-                            className="h-9 w-9 p-0"
-                            title="Download"
-                          >
-                            <Download className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant={isFavorite(image) ? "default" : "secondary"}
-                            onClick={() => handleAddToFavorites(image)}
-                            className="h-9 w-9 p-0"
-                            title="Add to Favorites"
-                          >
-                            <Heart className={`w-4 h-4 ${isFavorite(image) ? "fill-current" : ""}`} />
-                          </Button>
+                      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-3">
+                        {/* Quick actions row 1 */}
+                        <div className="grid grid-cols-4 gap-1.5 mb-2">
+                          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => setLightboxIndex(index)}
+                              className="h-9 w-full p-0 glass-hover"
+                              title="View in Gallery"
+                            >
+                              <Maximize2 className="w-4 h-4" />
+                            </Button>
+                          </motion.div>
+                          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => setSelectedComparison(index)}
+                              className="h-9 w-full p-0 glass-hover"
+                              title="Compare"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </motion.div>
+                          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => setEditingImage(image)}
+                              className="h-9 w-full p-0 glass-hover"
+                              title="Edit Filters"
+                            >
+                              <Sliders className="w-4 h-4" />
+                            </Button>
+                          </motion.div>
+                          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => setUpscaleImage(image)}
+                              className="h-9 w-full p-0 glass-hover"
+                              title="Upscale Image"
+                            >
+                              <ZoomIn className="w-4 h-4" />
+                            </Button>
+                          </motion.div>
+                        </div>
+                        {/* Quick actions row 2 */}
+                        <div className="grid grid-cols-4 gap-1.5 mb-2">
+                          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => setWatermarkImage(image)}
+                              className="h-9 w-full p-0 glass-hover"
+                              title="Add Watermark"
+                            >
+                              <Type className="w-4 h-4" />
+                            </Button>
+                          </motion.div>
+                          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => handleDownload(image)}
+                              className="h-9 w-full p-0 glass-hover"
+                              title="Download"
+                            >
+                              <Download className="w-4 h-4" />
+                            </Button>
+                          </motion.div>
+                          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} className="col-span-2">
+                            <Button
+                              size="sm"
+                              variant={isFavorite(image) ? "default" : "secondary"}
+                              onClick={() => handleAddToFavorites(image)}
+                              className="h-9 w-full p-0 gap-1.5"
+                              title="Add to Favorites"
+                            >
+                              <Heart className={`w-4 h-4 ${isFavorite(image) ? "fill-current" : ""}`} />
+                              <span className="text-xs">{isFavorite(image) ? "Saved" : "Save"}</span>
+                            </Button>
+                          </motion.div>
                         </div>
                         <SocialShare imageUrl={image} title={`Check out my ${frameStyle} AI snap!`} />
                       </div>
