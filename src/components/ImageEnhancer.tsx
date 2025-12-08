@@ -16,6 +16,10 @@ import {
   Check,
   Wand2,
   Gem,
+  Moon,
+  Mountain,
+  User,
+  Camera,
 } from "lucide-react";
 
 interface ImageEnhancerProps {
@@ -49,6 +53,39 @@ const AUTO_ENHANCE_PRESETS = [
     icon: Wand2,
     description: "Smart enhancement",
     settings: { brightness: 5, contrast: 10, saturation: 8, sharpness: 15, warmth: 3, vibrance: 12 },
+    gradient: "from-primary to-accent",
+  },
+  {
+    id: "portrait",
+    name: "Portrait",
+    icon: User,
+    description: "Skin-friendly",
+    settings: { brightness: 8, contrast: 8, saturation: 5, sharpness: 12, warmth: 6, vibrance: 8 },
+    gradient: "from-pink-500 to-rose-500",
+  },
+  {
+    id: "landscape",
+    name: "Landscape",
+    icon: Mountain,
+    description: "Nature tones",
+    settings: { brightness: 5, contrast: 15, saturation: 20, sharpness: 20, warmth: 2, vibrance: 25 },
+    gradient: "from-green-500 to-emerald-500",
+  },
+  {
+    id: "night",
+    name: "Night Mode",
+    icon: Moon,
+    description: "Low light fix",
+    settings: { brightness: 15, contrast: 12, saturation: 8, sharpness: 18, warmth: -5, vibrance: 10 },
+    gradient: "from-indigo-500 to-purple-500",
+  },
+  {
+    id: "hdr",
+    name: "HDR Effect",
+    icon: Camera,
+    description: "Dynamic range",
+    settings: { brightness: 3, contrast: 30, saturation: 15, sharpness: 25, warmth: 0, vibrance: 20 },
+    gradient: "from-amber-500 to-orange-500",
   },
   {
     id: "vivid",
@@ -56,6 +93,7 @@ const AUTO_ENHANCE_PRESETS = [
     icon: Palette,
     description: "Bold colors",
     settings: { brightness: 3, contrast: 15, saturation: 25, sharpness: 10, warmth: -5, vibrance: 30 },
+    gradient: "from-red-500 to-yellow-500",
   },
   {
     id: "cinematic",
@@ -63,6 +101,7 @@ const AUTO_ENHANCE_PRESETS = [
     icon: Gem,
     description: "Film look",
     settings: { brightness: -3, contrast: 20, saturation: -10, sharpness: 8, warmth: 8, vibrance: -5 },
+    gradient: "from-slate-500 to-zinc-600",
   },
   {
     id: "bright",
@@ -70,6 +109,7 @@ const AUTO_ENHANCE_PRESETS = [
     icon: Sun,
     description: "Light & airy",
     settings: { brightness: 15, contrast: 5, saturation: 5, sharpness: 5, warmth: 5, vibrance: 10 },
+    gradient: "from-yellow-400 to-orange-400",
   },
 ];
 
@@ -81,7 +121,6 @@ const ImageEnhancer = ({ imageUrl, isOpen, onClose }: ImageEnhancerProps) => {
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
   const [isAutoEnhancing, setIsAutoEnhancing] = useState(false);
 
-  // Load original image
   useEffect(() => {
     if (isOpen && imageUrl) {
       const img = new Image();
@@ -94,7 +133,6 @@ const ImageEnhancer = ({ imageUrl, isOpen, onClose }: ImageEnhancerProps) => {
     }
   }, [isOpen, imageUrl]);
 
-  // Apply enhancements when settings change
   useEffect(() => {
     if (originalImageRef.current) {
       applyEnhancements();
@@ -111,46 +149,37 @@ const ImageEnhancer = ({ imageUrl, isOpen, onClose }: ImageEnhancerProps) => {
 
     canvas.width = img.width;
     canvas.height = img.height;
-
-    // Draw original image
     ctx.drawImage(img, 0, 0);
 
-    // Get image data
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const data = imageData.data;
 
-    // Apply enhancements
     for (let i = 0; i < data.length; i += 4) {
       let r = data[i];
       let g = data[i + 1];
       let b = data[i + 2];
 
-      // Brightness
       const brightness = settings.brightness * 2.55;
       r += brightness;
       g += brightness;
       b += brightness;
 
-      // Contrast
       const contrast = (settings.contrast + 100) / 100;
       r = ((r / 255 - 0.5) * contrast + 0.5) * 255;
       g = ((g / 255 - 0.5) * contrast + 0.5) * 255;
       b = ((b / 255 - 0.5) * contrast + 0.5) * 255;
 
-      // Saturation
       const gray = 0.2989 * r + 0.587 * g + 0.114 * b;
       const satFactor = (settings.saturation + 100) / 100;
       r = gray + satFactor * (r - gray);
       g = gray + satFactor * (g - gray);
       b = gray + satFactor * (b - gray);
 
-      // Warmth (shift towards orange/yellow)
       const warmth = settings.warmth;
       r += warmth * 1.5;
       g += warmth * 0.5;
       b -= warmth * 1.5;
 
-      // Vibrance (selective saturation)
       const vibrance = settings.vibrance / 100;
       const maxChannel = Math.max(r, g, b);
       const avgChannel = (r + g + b) / 3;
@@ -159,7 +188,6 @@ const ImageEnhancer = ({ imageUrl, isOpen, onClose }: ImageEnhancerProps) => {
       g += (g - avgChannel) * vibranceAmount;
       b += (b - avgChannel) * vibranceAmount;
 
-      // Clamp values
       data[i] = Math.max(0, Math.min(255, r));
       data[i + 1] = Math.max(0, Math.min(255, g));
       data[i + 2] = Math.max(0, Math.min(255, b));
@@ -167,7 +195,6 @@ const ImageEnhancer = ({ imageUrl, isOpen, onClose }: ImageEnhancerProps) => {
 
     ctx.putImageData(imageData, 0, 0);
 
-    // Apply sharpening
     if (settings.sharpness > 0) {
       applySharpening(ctx, canvas.width, canvas.height, settings.sharpness / 100);
     }
@@ -207,22 +234,18 @@ const ImageEnhancer = ({ imageUrl, isOpen, onClose }: ImageEnhancerProps) => {
 
   const handleAutoEnhance = async () => {
     setIsAutoEnhancing(true);
-    
-    // Simulate AI processing
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    
-    // Apply AI auto preset
+    await new Promise((resolve) => setTimeout(resolve, 1200));
     const autoPreset = AUTO_ENHANCE_PRESETS[0];
     setSettings(autoPreset.settings);
     setSelectedPreset("auto");
     setIsAutoEnhancing(false);
-    
     toast.success("AI enhancement applied!");
   };
 
   const applyPreset = (preset: typeof AUTO_ENHANCE_PRESETS[0]) => {
     setSettings(preset.settings);
     setSelectedPreset(preset.id);
+    toast.success(`${preset.name} preset applied`);
   };
 
   const handleReset = () => {
@@ -275,71 +298,61 @@ const ImageEnhancer = ({ imageUrl, isOpen, onClose }: ImageEnhancerProps) => {
           onClick={onClose}
         >
           <motion.div
-            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            initial={{ scale: 0.95, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            className="bg-gradient-to-b from-card to-card/95 border border-border/50 rounded-3xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden"
+            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+            className="bg-card border border-border/30 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Premium Header */}
-            <div className="relative flex items-center justify-between p-5 border-b border-border/50 bg-gradient-to-r from-primary/5 via-transparent to-accent/5">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-accent/10 opacity-50" />
-              <div className="relative flex items-center gap-3">
-                <motion.div 
-                  className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary via-accent to-primary flex items-center justify-center shadow-lg shadow-primary/25"
-                  animate={{ rotate: [0, 5, -5, 0] }}
-                  transition={{ duration: 4, repeat: Infinity }}
-                >
-                  <Sparkles className="w-6 h-6 text-primary-foreground" />
-                </motion.div>
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-border/30 bg-secondary/30">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 text-primary-foreground" />
+                </div>
                 <div>
-                  <h2 className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
-                    AI Image Enhancer
-                  </h2>
-                  <p className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Gem className="w-3 h-3 text-accent" />
-                    Professional-grade enhancements
-                  </p>
+                  <h2 className="text-base font-semibold">AI Image Enhancer</h2>
+                  <p className="text-[10px] text-muted-foreground">Professional enhancements</p>
                 </div>
               </div>
-              <div className="relative flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={handleReset} className="gap-2">
-                  <RotateCcw className="w-4 h-4" />
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={handleReset} className="gap-1.5 h-8 text-xs">
+                  <RotateCcw className="w-3 h-3" />
                   Reset
                 </Button>
-                <Button variant="ghost" size="icon" onClick={onClose} className="rounded-xl">
-                  <X className="w-5 h-5" />
+                <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
+                  <X className="w-4 h-4" />
                 </Button>
               </div>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-6 p-6 max-h-[calc(90vh-180px)] overflow-y-auto">
+            <div className="grid md:grid-cols-2 gap-5 p-5 max-h-[calc(90vh-140px)] overflow-y-auto">
               {/* Preview */}
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-muted-foreground">Preview</span>
+                  <span className="text-xs font-medium text-muted-foreground">Preview</span>
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleAutoEnhance}
                     disabled={isAutoEnhancing}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-primary to-accent text-primary-foreground text-sm font-semibold shadow-lg shadow-primary/25 disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-primary to-accent text-primary-foreground text-xs font-medium shadow-md disabled:opacity-50"
                   >
                     {isAutoEnhancing ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Loader2 className="w-3 h-3 animate-spin" />
                         Analyzing...
                       </>
                     ) : (
                       <>
-                        <Wand2 className="w-4 h-4" />
-                        AI Auto-Enhance
+                        <Wand2 className="w-3 h-3" />
+                        AI Auto
                       </>
                     )}
                   </motion.button>
                 </div>
                 
-                <div className="relative aspect-square rounded-2xl overflow-hidden bg-secondary/30 border border-border/50 shadow-xl">
+                <div className="relative aspect-square rounded-xl overflow-hidden bg-secondary/30 border border-border/30">
                   <canvas
                     ref={canvasRef}
                     className="w-full h-full object-contain"
@@ -350,46 +363,48 @@ const ImageEnhancer = ({ imageUrl, isOpen, onClose }: ImageEnhancerProps) => {
                       animate={{ opacity: 1 }}
                       className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center"
                     >
-                      <div className="text-center space-y-3">
+                      <div className="text-center space-y-2">
                         <motion.div
                           animate={{ rotate: 360 }}
                           transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                          className="w-16 h-16 mx-auto rounded-full bg-gradient-to-r from-primary to-accent p-[2px]"
+                          className="w-12 h-12 mx-auto rounded-full bg-gradient-to-r from-primary to-accent p-[2px]"
                         >
                           <div className="w-full h-full rounded-full bg-background flex items-center justify-center">
-                            <Sparkles className="w-6 h-6 text-primary" />
+                            <Sparkles className="w-5 h-5 text-primary" />
                           </div>
                         </motion.div>
-                        <p className="text-sm font-medium">AI is analyzing your image...</p>
+                        <p className="text-xs font-medium">Analyzing image...</p>
                       </div>
                     </motion.div>
                   )}
                 </div>
 
-                {/* Quick presets */}
-                <div className="grid grid-cols-4 gap-2">
+                {/* Presets */}
+                <div className="grid grid-cols-4 gap-1.5">
                   {AUTO_ENHANCE_PRESETS.map((preset) => (
                     <motion.button
                       key={preset.id}
-                      whileHover={{ scale: 1.03, y: -2 }}
-                      whileTap={{ scale: 0.97 }}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                       onClick={() => applyPreset(preset)}
-                      className={`relative p-3 rounded-xl border transition-all ${
+                      className={`relative p-2 rounded-lg border transition-all ${
                         selectedPreset === preset.id
-                          ? "border-primary bg-primary/10 shadow-lg shadow-primary/20"
-                          : "border-border/50 bg-secondary/30 hover:border-primary/50 hover:bg-secondary/50"
+                          ? "border-primary bg-primary/10"
+                          : "border-border/30 bg-secondary/30 hover:border-primary/50"
                       }`}
                     >
-                      <div className="flex flex-col items-center gap-1.5">
-                        <preset.icon className={`w-5 h-5 ${selectedPreset === preset.id ? "text-primary" : "text-muted-foreground"}`} />
-                        <span className="text-xs font-medium">{preset.name}</span>
+                      <div className="flex flex-col items-center gap-1">
+                        <div className={`w-6 h-6 rounded-md bg-gradient-to-br ${preset.gradient} flex items-center justify-center`}>
+                          <preset.icon className="w-3 h-3 text-white" />
+                        </div>
+                        <span className="text-[9px] font-medium">{preset.name}</span>
                       </div>
                       {selectedPreset === preset.id && (
                         <motion.div
-                          layoutId="preset-check"
-                          className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary flex items-center justify-center"
+                          layoutId="preset-indicator"
+                          className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-primary flex items-center justify-center"
                         >
-                          <Check className="w-2.5 h-2.5 text-primary-foreground" />
+                          <Check className="w-2 h-2 text-primary-foreground" />
                         </motion.div>
                       )}
                     </motion.button>
@@ -398,18 +413,18 @@ const ImageEnhancer = ({ imageUrl, isOpen, onClose }: ImageEnhancerProps) => {
               </div>
 
               {/* Controls */}
-              <div className="space-y-5">
-                <div className="text-sm font-medium text-muted-foreground">Fine-tune</div>
+              <div className="space-y-4">
+                <span className="text-xs font-medium text-muted-foreground">Fine-tune</span>
                 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {sliderControls.map((control) => (
-                    <div key={control.key} className="space-y-2">
-                      <label className="flex items-center justify-between text-sm">
-                        <span className="flex items-center gap-2 font-medium">
-                          <control.icon className="w-4 h-4 text-primary" />
+                    <div key={control.key} className="space-y-1.5">
+                      <label className="flex items-center justify-between text-xs">
+                        <span className="flex items-center gap-1.5 font-medium">
+                          <control.icon className="w-3 h-3 text-primary" />
                           {control.label}
                         </span>
-                        <span className="px-2 py-0.5 rounded-md bg-secondary text-xs font-mono">
+                        <span className="px-1.5 py-0.5 rounded bg-secondary text-[10px] font-mono">
                           {settings[control.key] > 0 ? "+" : ""}
                           {settings[control.key]}
                         </span>
@@ -428,26 +443,27 @@ const ImageEnhancer = ({ imageUrl, isOpen, onClose }: ImageEnhancerProps) => {
               </div>
             </div>
 
-            {/* Premium Footer */}
-            <div className="flex justify-end gap-3 p-5 border-t border-border/50 bg-gradient-to-r from-transparent via-secondary/20 to-transparent">
-              <Button variant="outline" onClick={onClose} className="rounded-xl">
+            {/* Footer */}
+            <div className="flex justify-end gap-2 p-4 border-t border-border/30 bg-secondary/20">
+              <Button variant="outline" onClick={onClose} size="sm">
                 Cancel
               </Button>
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                 <Button
                   onClick={handleDownload}
                   disabled={isProcessing}
-                  className="gap-2 min-w-[180px] rounded-xl bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-lg shadow-primary/25"
+                  size="sm"
+                  className="gap-1.5 min-w-[140px] bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
                 >
                   {isProcessing ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="w-3 h-3 animate-spin" />
                       Processing...
                     </>
                   ) : (
                     <>
-                      <Download className="w-4 h-4" />
-                      Download Enhanced
+                      <Download className="w-3 h-3" />
+                      Download
                     </>
                   )}
                 </Button>
